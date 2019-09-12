@@ -1,0 +1,222 @@
+<?xml version="1.0"?>
+
+<!--
+/* *****************************************************************
+ *
+ * map_manager
+ *
+ * Copyright (c) 2019
+ * Institute of Mechatronic Systems,
+ * Leibniz Universitaet Hannover.
+ * (BSD License)
+ * All rights reserved.
+ *
+ * http://www.imes.uni-hannover.de
+ *
+ * This software is distributed WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR
+ * A PARTICULAR PURPOSE.
+ *
+ * For further information see http://www.linfo.org/bsdlicense.html
+ *
+ ******************************************************************/
+
+/**
+ * @file   rtabmap_localization_outdoor.launch
+ * @author Simon Ehlers (simon.ehlers@stud.uni-hannover.de)
+ * @date   06.08.2019
+ *
+ * @brief  Launches rtabmap and all other necessary nodes for mapping outdoor (high range configuration)
+ */
+-->
+
+<launch>
+  <!-- Launch robot Localization by an EKF -->
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se" clear_params="true" output="screen">
+    <rosparam command="load" file="$(find cmr_gazebo)/config/ekf_localization.yaml" />
+  </node>
+
+
+
+
+  <!-- ROBOT MAPPING VERSION: use this with ROS bag demo_mapping.bag -->
+  <!-- WARNING : Database is automatically deleted on each startup -->
+  <!--           See "delete_db_on_start" option below... -->
+
+  <!-- Choose visualization -->
+  <arg name="rviz" default="false" />
+  <arg name="rtabmapviz" default="false" />
+
+  <arg name="rgb_topic_1"        default="/cam_back/color/image_raw"/>
+  <arg name="rgb_info_topic_1"   default="/cam_back/color/camera_info"/>
+  <arg name="depth_topic_1"      default="/cam_back/velodyne_depth"/>
+
+  <arg name="rgb_topic_2"        default="/cam_front/color/image_raw"/>
+  <arg name="rgb_info_topic_2"   default="/cam_front/color/camera_info"/>
+  <arg name="depth_topic_2"      default="/cam_front/velodyne_depth"/>
+
+  <arg name="cam_back_rgbd" default="/cam_back/rgbd_sync_velodyne_back/rgbd_image"/>
+  <arg name="cam_front_rgbd" default="/cam_front/rgbd_sync_velodyne_front/rgbd_image"/>
+
+  <arg name="odom_topic"       default="/odometry/filtered"/>
+  <arg name="scan_topic"       default="/base/laser/scan_filtered"/>
+  <arg name="scan_cloud_topic" default="/velodyne_points"/>
+
+  <param name="use_sim_time" type="bool" value="false"/>
+
+  <!-- Localization-only mode -->
+  <arg name="localization"      default="true"/>
+  <arg     if="$(arg localization)" name="rtabmap_args"  default=""/>
+  <arg unless="$(arg localization)" name="rtabmap_args"  default=""/> <!--delete_db_on_cam_back_nodelet_managerstart -->
+
+
+  <group ns="rtabmap">
+    <!-- SLAM (robot side) -->
+    <!-- args: "delete_db_on_start" and "udebug" -->
+    <node name="rtabmap" pkg="rtabmap_ros" type="rtabmap" output="screen" args="$(arg rtabmap_args)">
+    <param name="frame_id"           type="string" value="base_link"/>
+    <param name="wait_for_transform" type="bool" value="true"/>
+    <param name="subscribe_rgb"   type="bool"   value="false"/>
+    <param name="subscribe_rgbd"   type="bool"   value="true"/>
+    <param name="subscribe_depth" type="bool" value="false"/>
+    <param name="subscribe_scan"  type="bool" value="false"/>
+    <param name="subscribe_scan_cloud"  type="bool" value="true"/>
+
+    <!-- As /az3/base_controller/odom topic doesn't provide covariances, we use TF to get odom and we fix the covariance
+    <param name="odom_frame_id"            type="string" value="odom"/>
+    <param name="odom_tf_linear_variance"  type="double" value="0.001"/>
+    <param name="odom_tf_angular_variance" type="double" value="0.001"/>
+          -->
+          <param name="odom_frame_id"            type="string" value="odom"/>
+
+          <remap from="scan"             to="$(arg scan_topic)"/>
+          <remap from="scan_cloud"       to="$(arg scan_cloud_topic)"/>
+          <remap from="rgbd_image0"      to="$(arg cam_front_rgbd)"/>
+          <remap from="rgbd_image1"      to="$(arg cam_back_rgbd)"/>
+         <!-- <remap from="rgb_image0"       to="$(arg rgb_topic_1)"/>
+          <remap from="rgb_image1"       to="$(arg rgb_topic_2)"/> -->
+
+          <param name="rgbd_cameras"    type="int"    value="2"/>
+          <param name="rgb_cameras"    type="int"    value="2"/>
+
+    <param name="rgb/image_transport"   type="string" value="compressed"/>
+    <!--<param name="depth/image_transport" type="string" value="compressedDepth"/> -->
+
+     <!-- RTAB-Map's parameters: do "rosrun rtabmap rtabmap (double-dash)params" to see the list of available parameters. -->
+    <param name="RGBD/Enabled" type="string" value="true"/>  <!--  should be true for metric mapping. When it is set to false, only appearance-based loop closure detection is done (without any metric information) -->
+    <param name="RGBD/NeighborLinkRefining" type="string" value="true"/>  <!-- Do odometry correction with consecutive laser scans -->
+    <param name="RGBD/ProximityBySpace"     type="string" value="true"/>  <!-- Local loop closure detection (using estimated position) with locations in WM -->
+    <param name="RGBD/ProximityByTime"      type="string" value="false"/> <!-- Local loop closure detection with locations in STM -->
+    <param name="RGBD/ProximityPathMaxNeighbors" type="string" value="10"/> <!-- Do also proximity detection by space by merging close scans together. -->
+    <param name="RGBD/SavedLocalizationIgnored" type="string" value="true"/> <!--Ignore last saved localization pose from previous session.-->
+    <param name="Reg/Strategy"              type="string" value="2"/>     <!-- 0=Visual, 1=ICP, 2=Visual+ICP -->
+    <param name="RGBD/OptimizeFromGraphEnd" type="string" value="false"/> <!-- Optimize graph from initial node so /map -> /odom transform will be generated -->
+    <param name="RGBD/OptimizeMaxError"     type="string" value="2.0"/>  <!-- Reject any loop closure causing large errors (>2x link's covariance) in the map -->
+    <param name="Reg/Force3DoF"             type="string" value="true"/>  <!-- 2D SLAM -->
+    <param name="Grid/FromDepth"            type="string" value="false"/> <!-- Create 2D occupancy grid from laser scan -->
+    <param name="Mem/STMSize"               type="string" value="60"/>    <!-- increased to 30 to avoid adding too many loop closures on just seen locations -->
+    <param name="RGBD/LocalRadius"          type="string" value="10"/>     <!-- limit length of proximity detections -->
+    <param name="RGBD/LoopClosureReextractFeatures"          type="string" value="true"/> <!--  [Extract features even if there are some already in the nodes.] -->
+
+
+    <param name="Grid/RayTracing"            type="string" value="true"/>
+    <param name="Grid/RangeMax"            type="string" value="100"/>
+    <param name="Grid/RangeMin"            type="string" value="2"/>
+    <param name="Grid/NormalsSegmentation"            type="string" value="true"/>
+    <param name="Grid/MaxObstacleHeight"            type="string" value="3.5"/>  <!-- 1.7 for indoor mapping, so that doors are detected. 3.5 for outdoor mapping! -->
+    <param name="Grid/FootprintHeight"            type="string" value="1.7"/>
+    <param name="Grid/FootprintLength"            type="string" value="0.85"/>
+    <param name="Grid/FootprintWidth"            type="string" value="0.7"/>
+    <param name="Grid/ScanDecimation"            type="string" value="1"/>
+    <param name="GridGlobal/FullUpdate"            type="string" value="true"/>
+    <param name="GridGlobal/Eroded"            type="string" value="true"/>
+    <param name="GridGlobal/OccupancyThr"            type="string" value="0.5"/>
+
+    <param name="Vis/CorGuessWinSize"            type="string" value="50"/> <!-- [Vis/CorType=0] Matching window size (pixels) around projected points when a guess transform is provided to find correspondences. 0 means disabled. -->
+    <param name="Vis/CorNNDR"            type="string" value="0.95"/> <!-- [[Vis/CorType=0] NNDR: nearest neighbor distance ratio. Used for features matching approach.] -->
+    <param name="Vis/CorNNType"            type="string" value="1"/> <!--[Vis/CorType=0] kNNFlannNaive=0, kNNFlannKdTree=1, kNNFlannLSH=2, kNNBruteForce=3, kNNBruteForceGPU=4. Used for features matching approach. -->
+    <param name="Vis/CorType"            type="string" value="0"/> <!-- Correspondences computation approach: 0=Features Matching, 1=Optical Flow -->
+    <param name="Vis/EstimationType"            type="string" value="1"/> <!-- Motion estimation approach: 0:3D->3D, 1:3D->2D (PnP), 2:2D->2D (Epipolar Geometry) -->
+    <param name="Vis/FeatureType"            type="string" value="1"/> <!-- 0=SURF 1=SIFT 2=ORB 3=FAST/FREAK 4=FAST/BRIEF 5=GFTT/FREAK 6=GFTT/BRIEF 7=BRISK 8=GFTT/ORB 9=KAZE. -->
+    <param name="Vis/MaxDepth"            type="string" value="0"/> <!-- [Max depth of the features (0 means no limit).] -->
+    <param name="Vis/MinDepth"            type="string" value="0"/> <!-- [Min depth of the features (0 means no limit).] -->
+    <param name="Vis/DepthAsMask"            type="string" value="true"/> <!-- Use depth image as mask when extracting features -->
+    <param name="Vis/MinInliers"            type="string" value="10"/> <!-- [Minimum feature correspondences to compute/accept the transformation.] -->
+    <param name="Vis/InlierDistance"            type="string" value="2.0"/> <!-- [Maximum distance for visual words correspondences in meters.] -->
+    <param name="Vis/EpipolarGeometryVar"            type="string" value="0.05"/> <!-- [[Vis/EstimationType = 2] Epipolar geometry maximum variance to accept the transformation.] -->
+
+        <!-- ICP parameters -->
+        <param name="Icp/VoxelSize"                  type="string" value="0.2"/>
+        <param name="Icp/PointToPlaneK"              type="string" value="20"/>
+        <param name="Icp/PointToPlaneRadius"         type="string" value="0"/>
+        <param name="Icp/PointToPlane"               type="string" value="true"/>
+        <param name="Icp/Iterations"                 type="string" value="10"/>
+        <param name="Icp/Epsilon"                    type="string" value="0.001"/>
+        <param name="Icp/MaxTranslation"             type="string" value="3"/>
+        <param name="Icp/MaxCorrespondenceDistance"  type="string" value="1"/>
+        <param name="Icp/PM"                         type="string" value="false"/> 
+        <param name="Icp/PMOutlierRatio"             type="string" value="0.7"/>
+        <param name="Icp/CorrespondenceRatio"        type="string" value="0.4"/>
+
+          <param name="Optimizer/Strategy"            type="string" value="2"/> <!-- Use GTSAM -->
+          <param name="Vis/EstimationType" type="string" value="0"/> <!-- should be 0 for multi-cameras -->
+          <param name="Rtabmap/TimeThr" type="string" value="750"/> <!-- Maximum time allowed for map update (ms) (0 means infinity). When map update time exceeds this fixed time threshold, some nodes in Working Memory (WM) are transferred to Long-Term Memory to limit the size of the WM and decrease the update time. -->
+          <param name="Mem/SaveDepth16Format" type="string" value="false"/> <!-- Save depth image into 16 bits format to reduce memory used -->
+          <param name="Grid/3D" type="string" value="false"/> <!-- A 3D occupancy grid is required if you want an OctoMap (3D ray tracing). Set to false if you want only a 2D map -->
+
+
+
+
+    <!-- localization mode -->
+    <param     if="$(arg localization)" name="Mem/IncrementalMemory" type="string" value="false"/>
+    <param unless="$(arg localization)" name="Mem/IncrementalMemory" type="string" value="true"/>
+    <param name="Mem/InitWMWithAllNodes" type="string" value="$(arg localization)"/>
+   </node>
+
+    <!-- Visualisation RTAB-Map -->
+    <node if="$(arg rtabmapviz)" pkg="rtabmap_ros" type="rtabmapviz" name="rtabmapviz" args="-d $(find rtabmap_ros)/launch/config/rgbd_gui.ini" output="screen">
+      <param name="subscribe_rgbd"   type="bool"   value="true"/>
+      <param name="subscribe_depth" type="bool" value="false"/>
+      <param name="subscribe_scan"     type="bool" value="false"/>
+      <param name="subscribe_scan_cloud"     type="bool" value="false"/>
+      <param name="frame_id"           type="string" value="base_link"/>
+      <param name="wait_for_transform" type="bool" value="true"/>
+
+
+      <remap from="scan"            to="$(arg scan_topic)"/>
+      <remap from="scan_cloud"            to="$(arg scan_cloud_topic)"/>
+      <remap from="odom"            to="$(arg odom_topic)"/>
+
+      <param name="rgb/image_transport"   type="string" value="compressed"/>
+      <param name="depth/image_transport" type="string" value=""/>
+
+      <remap from="rgbd_image0"       to="cam_back/rgbd_image"/>
+      <remap from="rgbd_image1"       to="cam_front/rgbd_image"/>
+    </node>
+  </group>
+
+  <!-- Visualisation RVIZ -->
+  <node if="$(arg rviz)" pkg="rviz" type="rviz" name="rviz" args="-d $(find rtabmap_ros)/launch/config/demo_robot_mapping.rviz" output="screen"/>
+   <node pkg="nodelet" type="nodelet" name="points_xyzrgb" args="standalone rtabmap_ros/point_cloud_xyzrgb">
+    <remap from="rgbd_image0"       to="/cam_back/color/image_raw"/>
+    <remap from="rgbd_image1"       to="/cam_front/color/image_raw"/>
+    <remap from="scan"            to="$(arg scan_topic)"/>
+    <remap from="scan_cloud"            to="$(arg scan_cloud_topic)"/>
+    <remap from="cloud"           to="voxel_cloud" />
+
+    <param name="rgb/image_transport"   type="string" value="compressed"/>
+    <param name="depth/image_transport" type="string" value="compressedDepth"/>
+
+    <param name="queue_size" type="int" value="10"/>
+    <param name="voxel_size" type="double" value="0.01"/>
+  </node>
+
+<!-- Launch rtabmap utils (rgbd_sync) on jetson-->
+  <group>
+      <!-- Define machine: Jetson -->
+      <machine name="jetson" address="cmr01-jetson" env-loader="/home/jetsonuser/cmr_utils/Scripts/setup_scripts/env_loader_scripts/env_load_jetson.sh" user="jetsonuser" default="true"/> 
+
+      <include file="$(find cmr_driver)/launch/rtabmap_utils_outdoor_jetson.launch"/>
+  </group>
+
+</launch>

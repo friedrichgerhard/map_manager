@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+
+<!--
+/* *****************************************************************
+ *
+ * map_manager
+ *
+ * Copyright (c) 2019
+ * Institute of Mechatronic Systems,
+ * Leibniz Universitaet Hannover.
+ * (BSD License)
+ * All rights reserved.
+ *
+ * http://www.imes.uni-hannover.de
+ *
+ * This software is distributed WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR
+ * A PARTICULAR PURPOSE.
+ *
+ * For further information see http://www.linfo.org/bsdlicense.html
+ *
+ ******************************************************************/
+
+/**
+ * @file   utils_map_manager.launch
+ * @author Simon Ehlers (simon.ehlers@stud.uni-hannover.de)
+ * @date   26.07.2019
+ *
+ * @brief  Launches pointcloud_to_laserscan node and the indoor/outdoor classifier node
+ */
+-->
+
+<launch>
+
+	<!-- Pointcloud to laserscan for door detection -->
+    <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="pointcloud_to_laserscan_node_front">
+      <remap from="cloud_in" to="/velodyne_points"/>
+      <remap from="scan" to="/velodyne_laserScan" />
+      <rosparam>
+        target_frame: base_link
+        transform_tolerance: 0.01
+        min_height: 0.5
+        max_height: 1.7
+
+        angle_min: -3.14
+        angle_max: 3.14
+        angle_increment: 0.0087
+        scan_time: 0.3333
+        range_min: 0.2
+        range_max: 100.0
+        use_inf: true
+
+        #concurrency_level affects number of pc queued for processing and the number of threadsused
+        # 0: Detect number of cores
+        # 1: Single threaded
+        # 2: inf : Parallelism level
+        concurrency_level: 1
+      </rosparam>
+    </node>
+
+
+	<!-- Indoor Outdoor Classifier-->
+	<arg name="img_topic"        default="/cam_front/color/image_raw"/>
+
+	<node name="in_out_classifier_node" pkg="cmr_cnn_classifier" type="in_out_classifier_node.py" output="screen">
+		<param name="img_topic"   type="string" value="$(arg img_topic)"/>
+		<!--Either 'compressed' or 'raw' -->
+		<param name="img_transport" type="string" value="compressed"/>
+	</node>
+
+	<node name="soundplay_node" pkg="sound_play" type="soundplay_node.py" output="screen">
+	</node>
+
+
+</launch>

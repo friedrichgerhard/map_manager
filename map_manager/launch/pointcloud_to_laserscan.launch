@@ -1,0 +1,43 @@
+<launch>
+
+	<!-- Pointcloud to laserscan for door detection -->
+    <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="pointcloud_to_laserscan_node_front">
+      <remap from="cloud_in" to="/velodyne_points"/>
+      <remap from="scan" to="/velodyne_laserScan" />
+      <rosparam>
+        target_frame: velodyne
+        transform_tolerance: 0.01
+        min_height: -1.0
+        max_height: 0.3
+
+        angle_min: -3.14
+        angle_max: 3.14
+        angle_increment: 0.0087
+        scan_time: 0.3333
+        range_min: 0.2
+        range_max: 100.0
+        use_inf: false
+
+        #concurrency_level affects number of pc queued for processing and the number of threadsused
+        # 0: Detect number of cores
+        # 1: Single threaded
+        # 2: inf : Parallelism level
+        concurrency_level: 1
+      </rosparam>
+    </node>
+
+
+	<!-- Indoor Outdoor Classifier-->
+	<arg name="img_topic"        default="/cam_front/color/image_raw"/>
+
+	<node name="in_out_classifier_node" pkg="cmr_cnn_classifier" type="in_out_classifier_node.py" output="screen">
+		<param name="img_topic"   type="string" value="$(arg img_topic)"/>
+		<!--Either 'compressed' or 'raw' -->
+		<param name="img_transport" type="string" value="compressed"/>
+	</node>
+
+	<node name="soundplay_node" pkg="sound_play" type="soundplay_node.py" output="screen">
+	</node>
+
+
+</launch>

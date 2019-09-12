@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+
+<!--
+/* *****************************************************************
+ *
+ * map_manager
+ *
+ * Copyright (c) 2019
+ * Institute of Mechatronic Systems,
+ * Leibniz Universitaet Hannover.
+ * (BSD License)
+ * All rights reserved.
+ *
+ * http://www.imes.uni-hannover.de
+ *
+ * This software is distributed WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR
+ * A PARTICULAR PURPOSE.
+ *
+ * For further information see http://www.linfo.org/bsdlicense.html
+ *
+ ******************************************************************/
+
+/**
+ * @file   sm_mapping.launch
+ * @author Simon Ehlers (simon.ehlers@stud.uni-hannover.de)
+ * @date   02.08.2019
+ *
+ * @brief  Launches State Machine for mapping and the parameter
+ */
+-->
+
+<launch>
+	<rosparam command="load" file="/home/ehlers/catkin_ws/src/cmr_localization/map_manager/cfg/params.yaml"/>
+
+	<!-- Launch sm_mapping-->
+	<node pkg="map_manager" type="sm_mapping" name="sm_mapping" output="screen">
+	</node>
+</launch>

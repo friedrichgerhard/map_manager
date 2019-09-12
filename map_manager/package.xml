@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<!--
+/* *****************************************************************
+ *
+ * map_manager
+ *
+ * Copyright (c) 2019
+ * Institute of Mechatronic Systems,
+ * Leibniz Universitaet Hannover.
+ * (BSD License)
+ * All rights reserved.
+ *
+ * http://www.imes.uni-hannover.de
+ *
+ * This software is distributed WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR
+ * A PARTICULAR PURPOSE.
+ *
+ * For further information see http://www.linfo.org/bsdlicense.html
+ *
+ ******************************************************************/
+
+/**
+ * @file   package.xml
+ * @author Simon Ehlers (simon.ehlers@stud.uni-hannover.de)
+ * @date   24.07.2019
+ *
+ * @brief  package xml for ROS-package map_manager
+ */
+-->
+
+<package format="2">
+  <name>map_manager</name>
+  <version>0.1.0</version>
+  <description>The map_manager package</description>
+
+  <maintainer email="simon.ehlers@stud.uni-hannover.de">ehlers</maintainer>
+
+  <license>BSD</license>
+  <author email="simon.ehlers@stdu.uni-hannover.de">ehlers</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roscpp std_msgs sensor_msgs geometry_msgs message_generation cv_bridge image_transport mrpt_bridge pose_cov_ops libg2o</build_depend>
+  <build_depend>message_generation</build_depend>
+  <build_export_depend>roscpp std_msgs sensor_msgs geometry_msgs cv_bridge image_transport mrpt_bridge pose_cov_ops libg2o</build_export_depend>
+  <exec_depend>roscpp std_msgs sensor_msgs geometry_msgs message_runtime cv_bridge image_transport mrpt_bridge pose_cov_ops libg2o</exec_depend>
+
+  <export>
+
+  </export>
+</package>

@@ -1,0 +1,48 @@
+#This file contains the parameters for the map_manager
+
+#-------- Section for automated_sm_mapping ----------------------
+#uses automated door detection for separating the maps into rooms. Sets the link points and creates the map automatically. The linkpoints and properties must be set manually by call services
+#-> the following parameters are only necessary if automated_mapping is activated.
+
+config_criterion: 0       # [0 = range-data, 1 = SSIM, 2 = PSNR 3 = indoor/outdoor classifier] Criterion for detecting the appearance of the new environment for choosing the configuration between small and high distances
+
+range_thr: 13.0                #Threshold for setting high range distance [config-criterion = 0]
+low_pass_filter_size: 60       #Filter size for average low pass filter [config-criterion = 0]
+ssim_thr: 0.7                  #Threshold for the SSIM criterion [config-criterion = 1]
+psnr_thr: 0.0                  #Threshold for the PSNR criterion [config-criterion = 2]
+num_depth_imgs: 10             #Number of depth images considered for computing SSIM and PSNR
+
+
+#-------- Section for environment_detector (relevant if you use automated_sm_mapping) ----------------------
+
+feature_matching_thr: 30       #Threshold for number of matching features before the loop closure is accepted
+num_last_imgs: 5               #Number of images collected for feature mathcing with saved image. Used to be more robust against noise in pictures
+NNDR_akaze: 0.7f               #Nearest neigbor distance ratio (NNDR) for AKAZE features
+NNDR_sift: 0.6f                #Nearest neigbor distance ratio (NNDR) for SIFT features
+
+icp_fitness_score_thr: 0.5     #If fitness score is over threshold after icp registration, new loop closure is accepted
+
+deriv_door_thr: 0.8            #Threshold for derivatives at doorposts to detect the door
+time_limit_door_detection: 15.0 #Time limit for detecting door after door front was the fist time detected
+
+deriv_range_thr: 2.0           #For detecting environment change based on the derivation of de bounding box of low-pass filtered range data
+low_pass_filter_size_env: 60   #Filter size for average low pass filter for detecting change in environment
+
+
+#-------- Section for global tracker & graph optimizer ----------------------
+
+#assumption about the variance of robot localization by the SLAM method
+initial_variance_x: 0.003       #Initial variance for position in x
+initial_variance_y: 0.003       #Initial variance for position in y
+initial_variance_theta: 0.003   #Initial variance for position in theta
+
+
+#-------- Section for sm_mapping (State Machine for manual setting linkpoints ----------------------
+# The linkpoints and linkpoint candidates are set manually by calling ros services (see instructions on Phabricator)
+
+use_global_tracker: true       # Bool variable, set true to use the global tracker for saving the global position of the linkpoints. (Not necesary for creating topological map)
+record_imgs_and_pc: true       # Set true, if pictures for every linkpoint should be saved. Additionally, also pointclouds for linkpoint-candidates are saved.
+
+# Note, that if use_global_tracker and record_imgs_and_pc are both true, the linkpoint.db is then compatible to the automated mapping (automated_sm_mapping). So, the mapping with sm_mapping can be continued with automated_sm_mapping.
+
+

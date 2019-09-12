@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+
+<!--
+/* *****************************************************************
+ *
+ * map_manager
+ *
+ * Copyright (c) 2019
+ * Institute of Mechatronic Systems,
+ * Leibniz Universitaet Hannover.
+ * (BSD License)
+ * All rights reserved.
+ *
+ * http://www.imes.uni-hannover.de
+ *
+ * This software is distributed WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR
+ * A PARTICULAR PURPOSE.
+ *
+ * For further information see http://www.linfo.org/bsdlicense.html
+ *
+ ******************************************************************/
+
+/**
+ * @file   sensor_model_full.launch
+ * @author Simon Ehlers (simon.ehlers@stud.uni-hannover.de)
+ * @date   07.08.2019
+ *
+ * @brief  Launches all drivers for the sensors and the urdf model
+ */
+-->
+
+<launch>
+<!-- **************************************** Maschine: cmr01   ********************************-->
+  <!-- Upload URDF Model to param server -->
+  <include file="$(find cmr_description)/launch/model_upload.launch"/>
+
+  <!-- Start IMU -->
+  <include file="$(find cmr_driver)/launch/imu.launch"/>
+
+  <!-- Start Velodyne -->
+  <include file="$(find cmr_driver)/launch/velodyne.launch"/>
+
+    <!-- Start Velodyne_Laser -->
+  <include file="$(find cmr_driver)/launch/velo_to_laser.launch"/>
+
+  <!--<node name="base_service_call" pkg="cmr_driver" type="base_servicecall.sh" /> -->
+
+
+<!-- ******************************************* Ende cmr01  ********************************-->
+
+<!-- **************************************** Maschine: jetson   ********************************-->
+
+  <group>
+      <!-- Define machine: Jetson  -->
+      <machine name="jetson" address="cmr01-jetson" env-loader="/home/jetsonuser/cmr_utils/Scripts/setup_scripts/env_loader_scripts/env_load_jetson.sh" user="jetsonuser" default="true"/> 
+
+      <!-- Start front camera -->
+      <include file="$(find cmr_driver)/launch/remote/cam_front_jetson.launch"/>
+
+      <!-- Start back camera -->
+      <include file="$(find cmr_driver)/launch/remote/cam_back_jetson.launch"/>
+
+      <!-- Rotate Back Image 
+	    <include file="$(find cmr_driver)/launch/rotate_image.launch">
+	 </include> -->
+
+      <!-- Start register velodyne for cam_front and cam_back -->
+      <include file="$(find cmr_driver)/launch/remote/register_velodyne_jetson.launch"/> 
+
+ 
+
+  </group>
+<!-- ********************************************* Ende jetson  ********************************-->
+
+<!-- ***************************************** Maschine: neobotix   ********************************-->
+
+  <!-- Start platform -->
+  <include file="$(find cmr_driver)/launch/remote/mp500.launch"/>
+
+
+</launch>
